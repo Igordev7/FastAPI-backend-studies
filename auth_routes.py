@@ -1,12 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from models import Usuario
-from schemas import UsuarioSchema
+from schemas import UsuarioSchema, LoginSchema
 from dependencies import pegar_sessao
 from main import bcrypt_context
 from sqlalchemy.orm import Session
 
 
 auth_router = APIRouter(prefix="/auth",tags=["auth"])
+
+def criar_token(id_usuario):
+    token = f"jsdsofadaojf{id_usuario}"
+    return token
 
 @auth_router.get("/")
 async def autenticar():
@@ -27,6 +31,16 @@ async def criar_conta(usuario_schema: UsuarioSchema, session: Session = Depends(
         session.commit()
         return {"mensagem":"Usuario cadastrado com sucesso"}
     
-@auth_router.get("/login")
-async def login(usuario_schema: UsuarioSchema, session: Session = Depends(pegar_sessao)):
-    usuario = session.query(Usuario).filter(Usuario.email == usuario_schema.email and Usuario.senha == usuario_schema).first()
+# login -> email e senha -> token JWT sadhuahsuafuanudsand   
+@auth_router.post("/login")
+async def login(usuario_schema: LoginSchema, session: Session = Depends(pegar_sessao)):
+    usuario = session.query(Usuario).filter(Usuario.email == usuario_schema.email).first()
+    if not usuario:
+        raise HTTPException(status_code=400,detail="Usuario n encontrado")
+
+    else:
+        access_token = criar_token(usuario.id)
+        return {
+            "access_token" : access_token,
+            "token_type": "Bearer"
+        }
